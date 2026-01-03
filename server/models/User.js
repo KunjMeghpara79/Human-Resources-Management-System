@@ -1,0 +1,58 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
+const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    password: {
+        type: String,
+        required: true,
+    },
+    role: {
+        type: String,
+        enum: ['EMPLOYEE', 'ADMIN', 'HR'],
+        default: 'EMPLOYEE',
+    },
+    // Additional profile fields can be added here
+    phone: String,
+    address: String,
+    jobTitle: String,
+    department: String,
+    joiningDate: Date,
+    baseSalary: Number,
+    manager: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    organization: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Organization'
+    },
+}, {
+    timestamps: true,
+});
+
+// Method to check password
+userSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Pre-save hook to hash password
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) {
+        next();
+    }
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+});
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
